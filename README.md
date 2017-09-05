@@ -2,15 +2,9 @@
 
 This application is a simple example of using both TX and RX calls from UHD API in order to achieve burst-based transmission (like in TDD). TX operations are performed in main thread, while another thread is spawned for dealing with RX operations. By default configuration, device is suppose to send TX burst (5ms), wait for 1ms, receive RX burst (5ms), and wait for another 89ms. Then the whole cycle is repeated. For sake of simplicity, application does not support MIMO configuration.
 
-Dependencies: 
-boost 
-soapysdr
+Dependencies: boost soapysdr
 
-compilation flags:
-
--D__GXX_EXPETIMENTAL_CXX0X__
-
--std=c++0x
+compilation flags: -D__GXX_EXPETIMENTAL_CXX0X__ -std=c++0x
 
 Program can be compiled as follows:
 
