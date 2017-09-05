@@ -4,8 +4,6 @@ This application is a simple example of using both TX and RX calls from SoapySDR
 
 Dependencies: boost soapysdr
 
-compilation flags: -D__GXX_EXPETIMENTAL_CXX0X__ -std=c++0x
-
 Program can be compiled as follows:
 
 cd SoapySDR_TXRX_Burst_Tester/Release make
