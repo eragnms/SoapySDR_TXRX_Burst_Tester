@@ -1,12 +1,17 @@
 /*
- * SoapySDR_TXTX_Burst_Tester v1.00
+ * SoapySDR_TXTX_Burst_Tester v1.01
  *
- *  Created on: 2017-09-04
+ *  Created on: 2017-09-06
  *      Author: ccsh
  *
  * Changelog:
  * v1.00 (2017-09-04)
  *			First version
+ * v1.01 (2017-09-06)
+ *			Time in future to start stream has been added to runtime configuration
+ *			Default values of SDR_Config has been updated to these used by LimeSDR
+ *			Changed namespace 'sdr_device' to 'sdr'
+ *			Changed last sleep command to usleep in order to support timeouts < 1 s
  */
 #include <iostream>
 #include <stdio.h>
@@ -28,7 +33,7 @@ namespace pt = boost::posix_time;
 
 using namespace std;
 using namespace utils;
-using namespace sdr_device;
+using namespace sdr;
 
 namespace utils
 {
@@ -99,6 +104,7 @@ int main(int argc, char *argv[])
 	double tx_burst_length;
 	double rx_burst_length;
 	double rx_tx_separation;
+	double time_in_future;
 
 	/*********************************************************************************************************/
 	//following code will read the content of a cfg file and command line arguments, print help messages etc.
@@ -154,6 +160,7 @@ int main(int argc, char *argv[])
 			("SIGNAL.tx_burst_length,k", po::value<double>(&tx_burst_length)		->default_value(5e-3), "Length of TX bursts in [s].")
 			("SIGNAL.rx_burst_length,l", po::value<double>(&rx_burst_length)		->default_value(5e-3), "Length of RX bursts in [s].")
 			("SIGNAL.rx_tx_separation,s", po::value<double>(&rx_tx_separation)		->default_value(1e-3), "RX and TX bursts separation in [s].")
+			("SIGNAL.time_in_future,y", po::value<double>(&time_in_future)			->default_value(1), "Time in future to start streaming in [s].")
 			;
 
 		cmdline_options.add(config);
@@ -215,8 +222,8 @@ int main(int argc, char *argv[])
 
 	int64_t now_tick = SoapySDR::timeNsToTicks(current_hardware_time, device_cfg->f_clk);
 
-	int64_t tx_start_tick = now_tick + SoapySDR::timeNsToTicks((1 + burst_period) * 1e9, device_cfg->f_clk);
-	int64_t rx_start_tick = now_tick + SoapySDR::timeNsToTicks((1 + burst_period + rx_tx_separation) * 1e9, device_cfg->f_clk);
+	int64_t tx_start_tick = now_tick + SoapySDR::timeNsToTicks((time_in_future + burst_period) * 1e9, device_cfg->f_clk);
+	int64_t rx_start_tick = now_tick + SoapySDR::timeNsToTicks((time_in_future + burst_period + rx_tx_separation) * 1e9, device_cfg->f_clk);
 
 	boost::thread rx_thread = boost::thread
 	(
@@ -261,7 +268,7 @@ int main(int argc, char *argv[])
 		msg("tx_thread: Unexpected exception occurred.", ERROR);
 	}
 
-	sleep((int)device_cfg->T_timeout);
+	usleep((int)1e6*device_cfg->T_timeout);
 
 
 	msg("All done!\n");

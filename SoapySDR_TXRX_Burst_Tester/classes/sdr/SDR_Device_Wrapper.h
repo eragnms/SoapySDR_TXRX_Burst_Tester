@@ -9,7 +9,7 @@
 
 #include "SDR_Config.h"
 
-namespace sdr_device
+namespace sdr
 {
 	class SDR_Device_Wrapper
 	{
