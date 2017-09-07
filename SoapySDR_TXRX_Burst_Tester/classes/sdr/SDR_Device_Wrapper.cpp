@@ -271,7 +271,7 @@ namespace sdr
 
 				init_successfull = true;
 
-				//reset hardware timer
+				//reset hardware time
 				device->setHardwareTime(0);
 
 				sleep(1);
@@ -557,9 +557,6 @@ namespace sdr
 		}
 
 		rx_verbose_msg += (boost::format(", no_of_received_samples: %u/%u") % no_of_received_samples % no_of_requested_samples).str();
-
-		if (ret != 0)
-			msg("sdr: Following problem occurred while deactivating RX stream: " + string(SoapySDR::errToStr(ret)), ERROR);
 
 		if (no_of_received_samples == no_of_requested_samples)
 		{
