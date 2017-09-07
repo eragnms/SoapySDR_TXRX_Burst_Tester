@@ -240,7 +240,7 @@ namespace sdr
 					if (device_cfg->debug_settings)
 						msg("sdr: Trying to activate TX stream...");
 
-					int ret = device->activateStream(tx_stream, SOAPY_SDR_HAS_TIME);
+					int ret = device->activateStream(tx_stream);
 
 					if (ret != 0)
 						msg("sdr: Following problem occurred while activating TX stream: " + string(SoapySDR::errToStr(ret)), ERROR);
@@ -248,7 +248,7 @@ namespace sdr
 						msg("sdr: TX stream has been successfully activated!");
 				}
 
-
+				/*
 				if (device_cfg->rx_active)
 				{
 					//activate RX stream
@@ -262,16 +262,29 @@ namespace sdr
 					else if (device_cfg->debug_settings)
 						msg("sdr: RX stream has been successfully activated!");
 				}
+				*/
+
+				int mtu_tx = device->getStreamMTU(tx_stream);
+				int mtu_rx = device->getStreamMTU(rx_stream);
+
+				msg("sdr: mtu_tx=" + to_string(mtu_tx) + " [Sa], mtu_rx=" + to_string(mtu_rx) + " [Sa]");
 
 				init_successfull = true;
+
+				//reset hardware timer
+				device->setHardwareTime(0);
+
+				sleep(1);
 			}
 			catch (const std::exception& e)
 			{
 				msg("sdr: Following exception occurred during initialization of the SDR device: " + string(e.what()), ERROR);
+				sleep(1);
 			}
 			catch (...)
 			{
 				msg("sdr: Unexpected exception was caught during initialization of the SDR device", ERROR);
+				sleep(1);
 			}
 
 			signal_handler.get_io_service().poll();
@@ -285,12 +298,12 @@ namespace sdr
 		{
 			if ((device_cfg->tx_active) && (tx_stream != nullptr))
 			{
-				int ret = device->deactivateStream(tx_stream, SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST);
+				int ret = device->deactivateStream(tx_stream);
 
-				if (ret == 0)
-					msg("sdr: TX stream has been successfully deactivated!");
-				else
+				if (ret != 0)
 					msg("sdr: Following problem occurred while deactivating TX stream: " + string(SoapySDR::errToStr(ret)), ERROR);
+				else if (device_cfg->debug_settings)
+					msg("sdr: TX stream has been successfully deactivated!");
 
 				device->closeStream(tx_stream);
 			}
@@ -299,12 +312,12 @@ namespace sdr
 
 			if ((device_cfg->rx_active) && (rx_stream != nullptr))
 			{
-				int ret = device->deactivateStream(rx_stream, SOAPY_SDR_HAS_TIME);
+				int ret = device->deactivateStream(rx_stream);
 
-				if (ret == 0)
-					msg("sdr: RX stream has been successfully deactivated!");
-				else
+				if (ret != 0)
 					msg("sdr: Following problem occurred while deactivating RX stream: " + string(SoapySDR::errToStr(ret)), ERROR);
+				else if (device_cfg->debug_settings)
+					msg("sdr: RX stream has been successfully deactivated!");
 
 				device->closeStream(rx_stream);
 			}
@@ -443,7 +456,7 @@ namespace sdr
 
 				tx_verbose_msg += (boost::format(", no_of_transmitted_samples: %u/%u") % no_of_transmitted_samples % no_of_requested_samples).str();
 
-				if ((stream_status == SOAPY_SDR_END_BURST) && (no_of_transmitted_samples == no_of_requested_samples))
+				if ((stream_status == 0) && (no_of_transmitted_samples == no_of_requested_samples))
 				{
 					msg("sdr: " + tx_verbose_msg);
 					res = true;
@@ -486,15 +499,21 @@ namespace sdr
 		vector<void*> buffs(1, (void*)samples);
 		void* const* buffs_ptr = &buffs[0];
 
-		int flags = SOAPY_SDR_HAS_TIME;
+		int ret = device->activateStream(rx_stream, SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST, burst_time, no_of_requested_samples);
+
+		if (ret != 0)
+			msg("sdr: Following problem occurred while activating RX stream: " + string(SoapySDR::errToStr(ret)), ERROR);
+
+		int read_flags;
+		int64_t read_time;
 
 		int no_of_received_samples = device->readStream
 		(
 			rx_stream,
 			buffs_ptr,
 			no_of_requested_samples,
-			flags,
-			burst_time,
+			read_flags,
+			read_time,
 			1e6 * device_cfg->T_timeout
 		);
 
@@ -532,10 +551,15 @@ namespace sdr
 				case SOAPY_SDR_UNDERFLOW:
 					rx_verbose_msg += "SOAPY_SDR_UNDERFLOW";
 					break;
+				default:
+					rx_verbose_msg += "NO_ERROR";
 			}
 		}
 
 		rx_verbose_msg += (boost::format(", no_of_received_samples: %u/%u") % no_of_received_samples % no_of_requested_samples).str();
+
+		if (ret != 0)
+			msg("sdr: Following problem occurred while deactivating RX stream: " + string(SoapySDR::errToStr(ret)), ERROR);
 
 		if (no_of_received_samples == no_of_requested_samples)
 		{
