@@ -274,7 +274,7 @@ namespace sdr
 				//reset hardware time
 				device->setHardwareTime(0);
 
-				sleep(1);
+				usleep((int)(1e6*device_cfg->T_timeout));
 			}
 			catch (const std::exception& e)
 			{
@@ -334,12 +334,14 @@ namespace sdr
 	{
 		bool res = false;
 
-		std::vector<std::complex<float>> buf(1, {0, 0});
-
+		//this is just a little tweak for a case where we actually do not want any samples to be transmitted
+		//but still would like this call to block (i.e. wait for a given tick on a device)
+		//to achieve that we are going to request transmission of a single zero sample at given tick
+		std::vector<std::complex<float>> empty_buf(1, {0, 0});
 		if (no_of_requested_samples <= 0)
 		{
-			samples = &buf[0];
-			no_of_requested_samples = buf.size();
+			samples = &empty_buf[0];
+			no_of_requested_samples = empty_buf.size();
 		}
 
 		string tx_verbose_msg = "[TX] ";
@@ -352,7 +354,7 @@ namespace sdr
 		const vector<void*> buffs(1, (void*)samples);
 		const void* const* buffs_ptr = &buffs[0];
 
-		int flags = SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST;
+		int flags = SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST | SOAPY_SDR_ONE_PACKET;
 
 		int no_of_transmitted_samples = device->writeStream
 		(
@@ -499,7 +501,7 @@ namespace sdr
 		vector<void*> buffs(1, (void*)samples);
 		void* const* buffs_ptr = &buffs[0];
 
-		int ret = device->activateStream(rx_stream, SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST, burst_time, no_of_requested_samples);
+		int ret = device->activateStream(rx_stream, SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST | SOAPY_SDR_ONE_PACKET, burst_time, no_of_requested_samples);
 
 		if (ret != 0)
 			msg("sdr: Following problem occurred while activating RX stream: " + string(SoapySDR::errToStr(ret)), ERROR);

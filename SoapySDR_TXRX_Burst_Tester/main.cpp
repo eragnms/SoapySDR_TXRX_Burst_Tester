@@ -1,7 +1,7 @@
 /*
- * SoapySDR_TXTX_Burst_Tester v1.02
+ * SoapySDR_TXTX_Burst_Tester v1.03
  *
- *  Created on: 2017-09-07
+ *  Created on: 2017-09-08
  *      Author: ccsh
  *
  * Changelog:
@@ -17,6 +17,8 @@
  *			TX and RX streams MTU is now displayed
  *			Updated configuration so only 100 samples are about to be transmitted or received
  *			Other minor fixes
+ * v1.03 (2017-09-08)
+ *			Making sure that TX loop will fire after RX loop, also making sure that first TX burst timestamp will be later than RX one
  */
 #include <iostream>
 #include <stdio.h>
@@ -224,8 +226,10 @@ int main(int argc, char *argv[])
 
 	int64_t now_tick = SoapySDR::timeNsToTicks(current_hardware_time, device_cfg->f_clk);
 
-	int64_t tx_start_tick = now_tick + SoapySDR::timeNsToTicks((time_in_future + burst_period) * 1e9, device_cfg->f_clk);
+	//make sure that first TX timestamp will be later than first RX timestamp
+	//(fix for LimeSDR)
 	int64_t rx_start_tick = now_tick + SoapySDR::timeNsToTicks((time_in_future + burst_period + rx_tx_separation) * 1e9, device_cfg->f_clk);
+	int64_t tx_start_tick = now_tick + SoapySDR::timeNsToTicks((time_in_future + 2 * burst_period) * 1e9, device_cfg->f_clk);
 
 	boost::thread rx_thread = boost::thread
 	(
@@ -240,6 +244,10 @@ int main(int argc, char *argv[])
 	try
 	{
 		int64_t tick = tx_start_tick;
+
+		//make sure that RX loop will start first
+		//(fix for LimeSDR)
+		usleep((int)(1e6*0.5*device_cfg->T_timeout));
 
 		if (device_cfg->tx_active)
 			msg("tx_thread: TX streaming started!");
