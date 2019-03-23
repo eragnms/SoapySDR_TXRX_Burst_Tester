@@ -148,7 +148,7 @@ namespace utils
 		cleanup();
 	}
 
-	boost::asio::io_service& Signal_Handler::get_io_service()
+	boost::asio::io_context& Signal_Handler::get_io_service()
 	{
 		return io_service;
 	}

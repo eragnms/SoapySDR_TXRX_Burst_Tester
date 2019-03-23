@@ -346,7 +346,7 @@ namespace sdr
 
 		string tx_verbose_msg = "[TX] ";
 
-		int64_t burst_time = SoapySDR::ticksToTimeNs(tick, device_cfg->f_clk);
+		long long int burst_time = SoapySDR::ticksToTimeNs(tick, device_cfg->f_clk);
 		int64_t current_time = device->getHardwareTime();
 		//int64_t current_tick = SoapySDR::timeNsToTicks(current_time, device_cfg->f_clk);
 		tx_verbose_msg += " current_time=" + to_string(current_time) + ", burst_time: " + to_string(burst_time);
@@ -507,7 +507,7 @@ namespace sdr
 			msg("sdr: Following problem occurred while activating RX stream: " + string(SoapySDR::errToStr(ret)), ERROR);
 
 		int read_flags;
-		int64_t read_time;
+		long long int read_time;
 
 		int no_of_received_samples = device->readStream
 		(

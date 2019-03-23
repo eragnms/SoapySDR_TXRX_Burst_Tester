@@ -69,7 +69,7 @@ namespace utils
 	class Signal_Handler
 	{
 	private:
-		boost::asio::io_service io_service;
+		boost::asio::io_context io_service;
 		boost::asio::signal_set signals;
 		void handle_signal
 		(
@@ -79,7 +79,7 @@ namespace utils
 		);
 	public:
 		Signal_Handler();
-		boost::asio::io_service& get_io_service();
+		boost::asio::io_context& get_io_service();
 	};
 
 	//signal handler meant to handle CTRL+C application closing routine
